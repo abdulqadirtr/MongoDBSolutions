@@ -50,3 +50,66 @@ var pipeline = [ {
 					$count : "love of labour" 
 				}
 				]
+
+
+
+
+var pipeline = [ { $match: { 
+
+				"countries" : "USA",
+				"tomatoes.viewer.rating" : {$gte : 3},
+				"cast" : { $exists : true}
+				} }, 
+				{ $addFields: { "favorites_cast": { $setIntersection : [ "$cast", [
+									  "Sandra Bullock",
+									  "Tom Hanks",
+									  "Julia Roberts",
+									  "Kevin Spacey",
+									  "George Clooney"] ]
+									  } 
+							} 
+				},{
+					$addFields : {"num_favs" : { $size : "$favorites_cast"}}
+				},{
+				$sort : {"num_favs" :  -1, "tomatoes.viewer.rating" : -1, "title" : -1}
+				},{
+					$skip : 24
+				},				
+				{
+					$limit : 1
+				}]
+				
+
+
+var pipeline = [ { $match: { 
+
+				"languages" : "English",
+				"imdb.rating" : {$gte : 1},
+				"imdb.votes" : {$gte : 1},
+				"year" : {$gte : 1990}
+				} },
+				{ $addFields : { "scaled_votes" : {
+				$add: [
+				  1,
+				  {
+					$multiply: [
+					  9,
+					  {
+						$divide: [
+						  { $subtract: ["$imdb.votes", 5] },
+						    1521100
+						]
+					  }
+					]
+				  }
+				]
+			  } } }, {
+				$addFields : { "normalized_rating" : {$avg : [ "$imdb.rating", "$scaled_votes" ] }}
+			  },
+			  {
+				$sort : {"normalized_rating" : 1}
+			  }
+			  ,
+				{
+					$limit : 2
+				}]
