@@ -1,0 +1,52 @@
+var pipeline = [ { $match: { 
+
+				"imdb.rating" : { $gte : 7},
+				"genres" : { $nin : ["Crime", "Horror"] },
+				"rated" : { $in : ["PG", "G"]},
+				"languages" : {$all : ["English", "Japanese"]}
+				} }, { $project: { "title" : 1, "_id" : 0, "rated" : 1 } } ]
+				
+
+var pipeline = [ { $project : { "titleOM" : { $split : [
+				"$title", " "]
+				}, "_id" : 0} }, {$project : { "sizeOA" : {$size : "$titleOM"}}}, {$match : { sizeOA : {$eq : 1}}} ]
+				
+				
+var pipeline = [{ $match : { "title" : "labor of love"}}]
+
+var pipeline = [ {
+					$match : { writers : { $exists : true},
+								cast : { $exists : true},
+								directors : { $exists : true}
+							}
+				},{
+					$project : {
+						writers: {
+						  $map: {
+							input: "$writers",
+							as: "writer",
+							in: {
+							  $arrayElemAt: [
+								{
+								  $split: [ "$$writer", " (" ]
+								},
+								0
+							  ]
+							}
+						  }
+						},
+						"directors" : 1,
+						"cast" : 1,
+						"_id" : 0
+					}
+				}, {
+					$project : { "common" : {
+						$setIntersection: [ "$cast", "$writers", "$directors"]}} 
+				},{
+					$addFields : {"count" : { $size : "$common"}}
+				}, {
+					$match : { count : { $gt : 0}}
+				}, {
+					$count : "love of labour" 
+				}
+				]
