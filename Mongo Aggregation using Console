@@ -113,3 +113,83 @@ var pipeline = [ { $match: {
 				{
 					$limit : 2
 				}]
+
+
+Problem:
+Let's use our increasing knowledge of the Aggregation Framework to explore our movies collection in more detail. 
+We'd like to calculate how many movies every cast member has been in and get an average imdb.rating for each cast member.
+
+What is the name, number of movies, and average rating (truncated to one decimal) 
+for the cast member that has been in the most number of movies with English as an available language?
+
+Provide the input in the following order and format
+
+var pipeline = [ {
+					$match : {
+						cast : { $exists : true},
+						languages : "English"
+					}
+				},
+				{$unwind : "$cast" }, 
+				{
+					$group : {
+						_id : "$cast",
+						numFilms : {$sum : 1},
+						average: { $avg: "$imdb.rating"}
+					}
+				},{$sort : {numFilms : -1}}
+				]
+				
+
+
+Which alliance from air_alliances flies 
+the most routes with either a Boeing 747 or an Airbus A380 (abbreviated 747 and 380 in air_routes)?
+
+var pipeline = [{
+					$lookup : {
+						from : "air_routes",
+						localField : "airlines",
+						foreignField : "airline.name",
+						as : "routes_collection"
+					}
+				},
+				{
+					$project : { _id : 0, name : 1, routes_collection : 1}
+				}, {
+					$unwind : "$routes_collection"
+				}, {
+					$match : { "routes_collection.airplane" : { $in : ["747", "380"]}}
+				}
+				]
+				
+
+Problem:
+
+How many movies are in both the top ten highest rated movies according to 
+the imdb.rating and the metacritic fields? We should get these results with exactly one access to the database.
+
+Hint: What is the intersection?
+
+var pipeline = [{
+					$match : {
+						"imdb.rating" : {$gt : 0},
+						metacritic : { $gt : 0}
+					}
+				},
+				{
+					$facet : {
+						"top_ten_meta" : [
+							{$sort : {"metacritic" : -1}},
+							{$limit : 10},
+							{$project : {_id : 0, title : 1}}
+						],
+						"top_ten_imdb" : [
+							{$sort : {"imdb.rating" : -1}},
+							{$limit : 10},
+							{$project : {_id : 0, title : 1}}
+						]
+					}
+				}, {
+					$addFields : { "common" : {
+						$setIntersection: [ "$top_ten_imdb", "$top_ten_meta"]}} 
+				}]
